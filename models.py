@@ -64,3 +64,13 @@ class Role(Base):
     __tablename__="roles"
     id=Column(Integer, primary_key=True, autoincrement=True)
     role_name = Column(String(20), unique=True)
+
+class Comment(Base):
+    __tablename__="comments"
+    id=Column(Integer, primary_key=True, autoincrement=True)
+    description=Column(String)
+    movie_id = Column(Integer, ForeignKey("movies.id"), default=1)
+    user_id = Column(Integer, ForeignKey("users.id"), default=1)
+
+    movie= relationship("Movie", backref='comments')
+    user = relationship("User", backref="comments")

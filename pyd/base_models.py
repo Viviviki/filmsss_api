@@ -28,6 +28,10 @@ class BaseRole(BaseModel):
     id:int=Field(example=1)
     role_name:str=Field(example="Зритель")
 class BaseUser(BaseModel):
-    id:int
+    id:int=Field(example=1)
     login:str=Field(exmaple="name")
     email:EmailStr=Field(example="mail@mail.com")
+
+class BaseComment(BaseModel):
+    id:int=Field(example=1)
+    description:str=Field(exmaple="Отзыв о фильме")

@@ -66,9 +66,30 @@ with Session(bind=engine) as session:
 
     user = m.User(
         login = "admin",
+        role_id = "3",
         first_name = "wiwiwi",
         last_name = "vivivi",
-        password = bcrypt.hashpw(b"pass", bcrypt.gensalt()),
+        password = bcrypt.hashpw(b"N1v4nnn?", bcrypt.gensalt()),
+        email = "mail@mail.com"
+    )
+    session.add(user)
+
+    user = m.User(
+        login = "seller",
+        role_id = "2",
+        first_name = "ivan",
+        last_name = "ivanov",
+        password = bcrypt.hashpw(b"N1v4nnn?", bcrypt.gensalt()),
+        email = "mail@mail.com"
+    )
+    session.add(user)
+
+    user = m.User(
+        login = "user",
+        role_id = "1",
+        first_name = "egor",
+        last_name = "egoooor",
+        password = bcrypt.hashpw(b"N1v4nnn?", bcrypt.gensalt()),
         email = "mail@mail.com"
     )
     session.add(user)
@@ -87,3 +108,5 @@ with Session(bind=engine) as session:
 
 
     session.commit()
+
+    

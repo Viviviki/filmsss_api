@@ -13,3 +13,7 @@ class SchemeTicket(BaseTicket):
     session : SchemeSession
     user: BaseUser
     place: BasePlace
+
+class SchemeComment(BaseComment):
+    movie: SchemeMovie
+    user: BaseUser

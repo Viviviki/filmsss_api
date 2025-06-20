@@ -25,13 +25,10 @@ class CreateTicket(BaseModel):
     user_id:int=Field(example=1)
     place_id:int=Field(example=1)
     
-class CreateUser(BaseModel):
-    login:str=Field(example="login", min_length=3, max_length=60)
-    first_name:str=Field(example="Иван", min_length=2)
-    last_name:str=Field(example="Иванов", min_length=2)
-    password:str=Field(example="password", min_length=8, max_length=20)
-    email:EmailStr=Field(example="mail@mail.com")
-    role_id:int=Field(example=1)
+class CreateComment(BaseModel):
+    description:str=Field(exmaple="Отзыв о фильме")
+    movie_id:int=Field(example=1)
+    user_id:int=Field(example=1)
 
 class LoginUser(BaseModel):
     login:str=Field(example="1v4n", min_length=2, max_length=20)
