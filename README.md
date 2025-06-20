@@ -78,19 +78,15 @@
 ## Инструкции к запуску
 
 Для запуска проекта выполните следующие шаги:
-1. Создать базу данных в MySQL
-	
-2. Ввести данные от соединения MySQL в `.env`
-	
-3. Создание виртуального окружения (.venv) `python -m venv .venv`
+1. Создание виртуального окружения (.venv) `python -m venv .venv`
     
-4. Активация виртуального окружения `.venv\Scripts\activate`
+2. Активация виртуального окружения `.venv\Scripts\activate`
         
-5. Установка зависимостей `pip install -r requirements.txt`
+3. Установка зависимостей `pip install -r requirements.txt`
     
-6. Запуск посева данных (seeding) `python seed.py`
+4. Запуск посева данных (seeding) `python seed.py`
     
-7. Запуск приложения `fastapi dev main.py`
+5. Запуск приложения `fastapi dev main.py`
     
 
 ## Описание к API
