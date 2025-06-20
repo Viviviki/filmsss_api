@@ -16,7 +16,7 @@ class Movie(Base):
     rate = Column(Float)
     genre_id = Column(Integer, ForeignKey("genres.id"))
     
-    genres = relationship("Genre", backref="movies")
+    genre = relationship("Genre", backref="movies")
 
 class Session(Base):
     __tablename__="sessions"
@@ -26,12 +26,18 @@ class Session(Base):
     time = Column(DateTime)
     price = Column(Float)
 
+    movie = relationship("Movie", backref="sessions")
+
 class Ticket(Base):
     __tablename__="tickets"
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(Integer, ForeignKey("sessions.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
     place_id = Column(Integer, ForeignKey("places.id"))
+
+    session = relationship("Session", backref="tickets")
+    user = relationship("User", backref="tickets")
+    place = relationship("Place", backref="tickets")
 
 class Hall(Base):
     __tablename__="halls"
@@ -50,3 +56,11 @@ class User(Base):
     last_name = Column(String)
     email = Column(String)
     password = Column(String)
+    role_id = Column(Integer, ForeignKey("roles.id"), default=1)
+
+    role = relationship("Role", backref='users')
+
+class Role(Base):
+    __tablename__="roles"
+    id=Column(Integer, primary_key=True, autoincrement=True)
+    role_name = Column(String(20), unique=True)

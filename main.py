@@ -9,11 +9,47 @@ import pyd
 import string
 import random
 import bcrypt
+from auth import auth_handler
 
 
 app=FastAPI()
 
-@app.get("/api/movies")
+@app.post("/register", response_model=pyd.SchemeUser)
+def  user_register(user: pyd.CreateUser, db:Session=Depends(get_db)):
+    user_db = db.query(m.User).filter(
+        m.User.login == user.login
+    ).first()
+    if user_db:
+        raise HTTPException(400, "Логин уже занят!")
+    user_db = m.User()
+    user_db.first_name = user.first_name
+    user_db.last_name = user.last_name
+    user_db.login = user.login
+    user_db.email = user.email
+    user_db.role_id = user.role_id
+    user_db.password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+
+    db.add(user_db)
+    db.commit()
+
+    # logging.info(f"{dt.now()} - User: {user_db.username} registred")
+    return user_db
+
+# Вход
+@app.post("/login")
+def user_auth(login: pyd.LoginUser, db: Session=Depends(get_db)):
+    user_db = db.query(m.User).filter(
+        m.User.login == login.login
+    ).first()
+    if not user_db:
+        raise HTTPException(404, "Пользователь не найден!")
+    if auth_handler.verify_password(login.password, user_db.password):
+        # logging.info(f"{dt.now()} - User: {user_db.username} loggined")
+        return {"token": auth_handler.encode_token(user_db.id, user_db.role_id, user_db.login)}
+    # logging.info(f"{dt.now()} - User: {user_db.username} fail authentication")
+    raise HTTPException(400, "Доступ запрещён!")
+
+@app.get("/api/movies", response_model=List[pyd.SchemeMovie])
 def get_movies(page:int=Query(1, gt=0), limit:int|None=Query(None, gt=0, le=100), genre:str|None=Query(None), minRating:float|None=Query(None, ge=0), db:Session=Depends(get_db)):
     movies = db.query(m.Movie)
     if genre:
@@ -38,3 +74,171 @@ def get_movies(page:int=Query(1, gt=0), limit:int|None=Query(None, gt=0, le=100)
     if not all_movies:
         raise HTTPException(404, "Фильмы не найдены")
     return all_movies
+
+@app.get("/api/movie/{id}", response_model=pyd.SchemeMovie)
+def get_movie(id:int, db:Session=Depends(get_db)):
+    movie = db.query(m.Movie).filter(m.Movie.id==id).first()
+    if not movie:
+        raise HTTPException(404, "Фильм не найден")
+    return movie
+
+@app.post("/api/movie/", response_model=pyd.SchemeMovie)
+def create_movie(movie:pyd.CreateMovie, db:Session=Depends(get_db)):
+    movie_db =m.Movie()
+    movie_db.movie_name = movie.movie_name
+    movie_db.duration = movie.duration
+    movie_db.rate = movie.rate
+    genre_db = db.query(m.Genre).filter(m.Genre.id==movie.genre_id).first()
+    if not genre_db:
+        raise HTTPException(404, "Жанр не найден")
+    movie_db.genre_id = movie.genre_id
+    db.add(movie_db)
+    db.commit()
+    return movie_db
+
+@app.put("/api/movie/{id}", response_model=pyd.SchemeMovie)
+def edit_movie(id:int, movie:pyd.CreateMovie, db:Session=Depends(get_db)):
+    movie_db = db.query(m.Movie).filter(m.Movie.id==id).first()
+    if not movie_db:
+        raise HTTPException(404, "Фильм не найден")
+    movie_db.movie_name = movie.movie_name
+    movie_db.duration = movie.duration
+    movie_db.rate = movie.rate
+    genre_db = db.query(m.Genre).filter(m.Genre.id==movie.genre_id).first()
+    if not genre_db:
+        raise HTTPException(404, "Жанр не найден")
+    movie_db.genre_id = movie.genre_id
+    db.add(movie_db)
+    db.commit()
+    return movie_db
+
+@app.delete("/api/movie/{id}")
+def delete_movie(id:int, db:Session=Depends(get_db)):
+    movie = db.query(m.Movie).filter(m.Movie.id==id).first()
+    if not movie:
+        raise HTTPException(404, "Фильм не найден")
+    db.delete(movie)
+    db.commit()
+    return {"detail":"Фильм удален"}
+
+@app.get("/api/sessions", response_model=List[pyd.SchemeSession])
+def get_sessions(db:Session=Depends(get_db)):
+    sessions = db.query(m.Session).all()
+    if not sessions:
+        raise HTTPException(404, "Сеансы не найдены")
+    return sessions
+
+@app.get("/api/session/{id}", response_model=pyd.SchemeSession)
+def get_session(id:int, db:Session=Depends(get_db)):
+    session = db.query(m.Session).filter(m.Session.id==id).first()
+    if not session:
+        raise HTTPException(404, "Сеанс не найден")
+    return session
+
+@app.post("/api/session/", response_model=pyd.SchemeSession)
+def create_session(session:pyd.CreateSession, db:Session=Depends(get_db)):
+    session_db =m.Session()
+    movie_db = db.query(m.Movie).filter(m.Movie.id==session.movie_id).first()
+    if not movie_db:
+        raise HTTPException(404, "Фильм не найден")
+    session_db.movie_id = session.movie_id
+    hall_db = db.query(m.Hall).filter(m.Hall.id==session.hall_id).first()
+    if not hall_db:
+        raise HTTPException(404, "Зал не найден")
+    session_db.hall_id = session.hall_id
+    session_db.time = session.time
+    session_db.price = session.price
+    db.add(session_db)
+    db.commit()
+    return session_db
+
+@app.put("/api/session/{id}", response_model=pyd.SchemeSession)
+def edit_session(id:int, session:pyd.CreateSession, db:Session=Depends(get_db)):
+    session_db = db.query(m.Session).filter(m.Session.id==id).first()
+    if not session_db:
+        raise HTTPException(404, "Сеанс не найден")
+    movie_db = db.query(m.Movie).filter(m.Movie.id==session.movie_id).first()
+    if not movie_db:
+        raise HTTPException(404, "Фильм не найден")
+    session_db.movie_id = session.movie_id
+    hall_db = db.query(m.Hall).filter(m.Hall.id==session.hall_id).first()
+    if not hall_db:
+        raise HTTPException(404, "Зал не найден")
+    session_db.hall_id = session.hall_id
+    session_db.time = session.time
+    session_db.price = session.price
+    db.add(session_db)
+    db.commit()
+    return session_db
+
+@app.delete("/api/session/{id}")
+def delete_session(id:int, db:Session=Depends(get_db)):
+    session = db.query(m.Session).filter(m.Session.id==id).first()
+    if not session:
+        raise HTTPException(404, "Сеанс не найден")
+    db.delete(session)
+    db.commit()
+    return {"detail":"Сеанс удален"}
+
+@app.get("/api/tickets", response_model=List[pyd.SchemeTicket])
+def get_tickets(db:Session=Depends(get_db)):
+    tickets = db.query(m.Ticket).all()
+    if not tickets:
+        raise HTTPException(404, "Билеты не найдены")
+    return tickets
+
+@app.get("/api/tickets/{id}", response_model=pyd.SchemeTicket)
+def get_ticket(id:int, db:Session=Depends(get_db)):
+    ticket = db.query(m.Ticket).filter(m.Ticket.id==id).first()
+    if not ticket:
+        raise HTTPException(404, "Билет не найден")
+    return ticket
+
+@app.post("/api/ticket/", response_model=pyd.SchemeTicket)
+def create_ticket(ticket:pyd.CreateTicket, db:Session=Depends(get_db), user:m.User=Depends(auth_handler.auth_wrapper)):
+    ticket_db =m.Ticket()
+    session_db = db.query(m.Session).filter(m.Session.id==ticket.session_id).first()
+    if not session_db:
+        raise HTTPException(404, "Сеанс не найден")
+    ticket_db.session_id = ticket.session_id
+    user_db = db.query(m.User).filter(m.User.id==ticket.user_id).first()
+    if not user_db:
+        raise HTTPException(404, "Пользователь не найден")
+    ticket_db.user_id = ticket.user_id
+    place_db = db.query(m.Place).filter(m.Place.id==ticket.place_id).first()
+    if not place_db:
+        raise HTTPException(404, "Место не найдено")
+    ticket_db.place_id = ticket.place_id
+    db.add(ticket_db)
+    db.commit()
+    return ticket_db
+
+@app.put("/api/ticket/{id}", response_model=pyd.SchemeTicket)
+def edit_ticket(id:int, ticket:pyd.CreateTicket, db:Session=Depends(get_db)):
+    ticket_db = db.query(m.Ticket).filter(m.Ticket.id==id).first()
+    if not ticket_db:
+        raise HTTPException(404, "Билет не найден")
+    session_db = db.query(m.Session).filter(m.Session.id==ticket.session_id).first()
+    if not session_db:
+        raise HTTPException(404, "Сеанс не найден")
+    ticket_db.session_id = ticket.session_id
+    user_db = db.query(m.User).filter(m.User.id==ticket.user_id).first()
+    if not user_db:
+        raise HTTPException(404, "Пользователь не найден")
+    ticket_db.user_id = ticket.user_id
+    place_db = db.query(m.Place).filter(m.Place.id==ticket.place_id).first()
+    if not place_db:
+        raise HTTPException(404, "Место не найдено")
+    ticket_db.place_id = ticket.place_id
+    db.add(ticket_db)
+    db.commit()
+    return ticket_db
+
+@app.delete("/api/ticket/{id}")
+def delete_ticket(id:int, db:Session=Depends(get_db)):
+    ticket = db.query(m.Ticket).filter(m.Ticket.id==id).first()
+    if not ticket:
+        raise HTTPException(404, "Билет не найден")
+    db.delete(ticket)
+    db.commit()
+    return {"detail":"Билет удален"}
